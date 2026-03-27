@@ -1,104 +1,59 @@
 import { env } from "@/config/env";
 import axios, { type AxiosInstance } from "axios";
+import {
+  clearStoredAuth,
+  getStoredAccessToken,
+  mapBackendUser,
+  mapTokenResponse,
+  persistAuth,
+} from "@/core/auth";
 import { useGlobalStore } from "@/core/global-store/index";
 import type {
-  TRefreshTokenResponse,
+  TBackendTokenResponse,
+  TBackendUser,
   TSigninInput,
   TSigninResponse,
   TSignupInput,
   TSignupResponse,
-  TUser,
 } from "../types";
 
 const setUser = useGlobalStore.getState().setUser;
 
 class BackendApi {
   private readonly api: AxiosInstance;
-  private isRefreshing: boolean = false;
-  private refreshQueue: Array<{
-    resolve: (value: TRefreshTokenResponse) => void;
-    reject: (error: unknown) => void;
-  }> = [];
 
   constructor(url: string) {
-    const accessToken = window.localStorage.getItem("accessToken") || "";
-    axios.defaults.withCredentials = true;
     this.api = axios.create({
       baseURL: url,
-      // this is commented out because we want to set the token dynamically
-      // headers: {
-      //   Authorization: `Bearer ${this.accessToken}`,
-      // },
     });
 
-    this.api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-
+    this.setAccessToken(getStoredAccessToken());
     this.setupInterceptors();
+  }
+
+  private setAccessToken(accessToken: string | null) {
+    if (accessToken) {
+      this.api.defaults.headers.common["Authorization"] =
+        `Bearer ${accessToken}`;
+      return;
+    }
+
+    delete this.api.defaults.headers.common["Authorization"];
   }
 
   private setupInterceptors() {
     this.api.interceptors.response.use(
       (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-        if (
-          error.response?.status === 401 &&
-          originalRequest.url !== "/auth/refresh"
-        ) {
-          if (this.isRefreshing) {
-            return new Promise<TRefreshTokenResponse>((resolve, reject) => {
-              this.refreshQueue.push({ resolve, reject });
-            })
-              .then((tokens) => {
-                originalRequest.headers["Authorization"] =
-                  `Bearer ${tokens.accessToken}`;
-                return this.api(originalRequest);
-              })
-              .catch((err) => {
-                return Promise.reject(err);
-              });
-          }
-          this.isRefreshing = true;
-          try {
-            const token = window.localStorage.getItem("refreshToken");
-            if (!token) {
-              throw new Error("No refresh token available");
-            }
-            const { accessToken, refreshToken } = await this.refresh(token);
-            window.localStorage.setItem("accessToken", accessToken);
-            window.localStorage.setItem("refreshToken", refreshToken);
-            this.api.defaults.headers.common["Authorization"] =
-              `Bearer ${accessToken}`;
-            originalRequest.headers["Authorization"] = `Bearer ${accessToken}`;
-            this.processRefreshQueue(null, { accessToken, refreshToken });
-            return this.api(originalRequest);
-          } catch (err) {
-            this.processRefreshQueue(err, null);
-            setUser(null);
-            window.localStorage.removeItem("accessToken");
-            window.localStorage.removeItem("refreshToken");
-            return Promise.reject(err);
-          } finally {
-            this.isRefreshing = false;
-          }
+      (error) => {
+        if (error.response?.status === 401) {
+          clearStoredAuth();
+          setUser(null);
+          this.setAccessToken(null);
         }
+
         return Promise.reject(error);
       },
     );
-  }
-
-  private processRefreshQueue(
-    error: unknown,
-    tokens: TRefreshTokenResponse | null,
-  ) {
-    this.refreshQueue.forEach(({ resolve, reject }) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(tokens as TRefreshTokenResponse);
-      }
-    });
-    this.refreshQueue = [];
   }
 
   async get<T>(path: string, params?: Record<string, string>): Promise<T> {
@@ -123,8 +78,11 @@ class BackendApi {
     return response.data;
   }
 
-  async create<T>(path: string, data: T): Promise<T> {
-    const response = await this.api.post<T>(path, data);
+  async create<TResponse, TInput = TResponse>(
+    path: string,
+    data: TInput,
+  ): Promise<TResponse> {
+    const response = await this.api.post<TResponse>(path, data);
     return response.data;
   }
 
@@ -148,33 +106,37 @@ class BackendApi {
   }
 
   async signUp(data: TSignupInput): Promise<TSignupResponse> {
-    const response = await this.api.post<TSignupResponse>("/auth/signup", data);
-    const { accessToken } = response.data;
-    this.api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-    return response.data;
+    const response = await this.api.post<TBackendUser>("/auth/signup", {
+      first_name: data.firstName.trim(),
+      last_name: data.lastName.trim(),
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+      confirm_password: data.confirmPassword,
+    });
+
+    return mapBackendUser(response.data);
   }
 
   async signIn(data: TSigninInput): Promise<TSigninResponse> {
-    const response = await this.api.post<TSigninResponse>("/auth/signin", data);
-    const { accessToken } = response.data;
-    this.api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-    return response.data;
-  }
+    const formData = new URLSearchParams();
+    formData.set("username", data.email.trim().toLowerCase());
+    formData.set("password", data.password);
 
-  async refresh(refreshToken: string): Promise<TRefreshTokenResponse> {
-    const response = await this.api.post<TRefreshTokenResponse>(
-      "/auth/refresh",
+    const response = await this.api.post<TBackendTokenResponse>(
+      "/auth/login",
+      formData,
       {
-        refreshToken,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       },
     );
-    return response.data;
-  }
 
-  async verifyUser(): Promise<TUser> {
-    const response = await this.api.get<{ user: TUser }>("/auth/verify");
-    const user = response.data.user;
-    return user;
+    const session = mapTokenResponse(response.data);
+    persistAuth(session);
+    setUser(session.user);
+    this.setAccessToken(session.accessToken);
+    return session;
   }
 
   async getFile(path: string, params?: Record<string, string>): Promise<Blob> {
@@ -191,7 +153,9 @@ class BackendApi {
   }
 
   async signOut(): Promise<void> {
-    await this.api.post("/auth/signout");
+    clearStoredAuth();
+    setUser(null);
+    this.setAccessToken(null);
   }
 }
 

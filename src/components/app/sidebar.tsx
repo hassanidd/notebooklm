@@ -1,5 +1,8 @@
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
+import { backendApi } from "@/core/api";
+import { getUserDisplayName, getUserInitials } from "@/core/auth";
+import { useGlobalStore } from "@/core/global-store/index";
 import {
   LayoutDashboard,
   Database,
@@ -47,10 +50,16 @@ const NAV_GROUPS = [
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const user = useGlobalStore((state) => state.user);
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path.split("?")[0]);
+  };
+
+  const handleSignOut = async () => {
+    await backendApi.signOut();
+    navigate("/auth", { replace: true });
   };
 
   return (
@@ -135,16 +144,26 @@ export default function Sidebar() {
           <HelpCircle className="size-3.5" />
           Help & Docs
         </button>
-        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group">
+        <button
+          type="button"
+          onClick={() => {
+            void handleSignOut();
+          }}
+          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl hover:bg-gray-50 transition-colors group text-left"
+        >
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 shadow-sm">
-            AK
+            {getUserInitials(user)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-gray-800 truncate leading-tight">Alex Kim</p>
-            <p className="text-[10px] text-gray-500 truncate">alex.kim@acme.com</p>
+            <p className="text-xs font-semibold text-gray-800 truncate leading-tight">
+              {getUserDisplayName(user)}
+            </p>
+            <p className="text-[10px] text-gray-500 truncate">
+              {user?.email ?? "No email available"}
+            </p>
           </div>
           <LogOut className="size-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
+        </button>
       </div>
     </aside>
   );

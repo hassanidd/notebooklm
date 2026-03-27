@@ -1,30 +1,33 @@
 import type z from "zod";
-import type {
-  refreshTokenSchema,
-  signinSchema,
-  signupSchema,
-  userSchema,
-} from "./validations";
+import type { signinSchema, signupSchema, userSchema } from "./validations";
 
 export type TUser = z.infer<typeof userSchema>;
 
 export type TSignupInput = z.input<typeof signupSchema>;
 export type TSigninInput = z.input<typeof signinSchema>;
-export type TRefreshToken = z.infer<typeof refreshTokenSchema>;
 
-export type TSignupResponse = {
+export type TBackendUser = {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  profile_image?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type TBackendTokenResponse = {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+};
+
+export type TAuthSession = {
   user: TUser;
   accessToken: string;
   refreshToken: string;
+  tokenType: string;
 };
 
-export type TSigninResponse = {
-  user: TUser;
-  accessToken: string;
-  refreshToken: string;
-};
-
-export type TRefreshTokenResponse = {
-  accessToken: string;
-  refreshToken: string;
-};
+export type TSignupResponse = TUser;
+export type TSigninResponse = TAuthSession;

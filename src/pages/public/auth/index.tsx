@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { Navigate } from "react-router";
 import { LoginForm } from "./components/login";
 import { SignupForm } from "./components/sign-up";
-import { ForgotPasswordForm } from "./components/forgot-password";
-import { TwoFAForm } from "./components/two-fa";
+import { hasStoredAuth } from "@/core/auth";
 import { Sparkles, Layers, Search, Zap, Shield, Star } from "lucide-react";
 
-type View = "login" | "signup" | "forgot" | "2fa";
+type View = "login" | "signup";
 
 const FEATURES = [
   {
@@ -36,6 +36,10 @@ const TESTIMONIALS = [
 
 export default function AuthPage() {
   const [view, setView] = useState<View>("login");
+
+  if (hasStoredAuth()) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-white">
@@ -140,20 +144,10 @@ export default function AuthPage() {
         <div className="flex-1 flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md">
             {view === "login" && (
-              <LoginForm
-                onSwitchToSignUp={() => setView("signup")}
-                onForgotPassword={() => setView("forgot")}
-                onTwoFA={() => setView("2fa")}
-              />
+              <LoginForm onSwitchToSignUp={() => setView("signup")} />
             )}
             {view === "signup" && (
               <SignupForm onSwitchToLogin={() => setView("login")} />
-            )}
-            {view === "forgot" && (
-              <ForgotPasswordForm onBack={() => setView("login")} />
-            )}
-            {view === "2fa" && (
-              <TwoFAForm onBack={() => setView("login")} />
             )}
           </div>
         </div>

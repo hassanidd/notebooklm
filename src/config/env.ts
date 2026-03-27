@@ -4,7 +4,7 @@ const envSchema = z.object({
   VITE_NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
-  VITE_BACKEND_URL: z.string().url().default("http://localhost:3000/api"),
+  VITE_BACKEND_URL: z.string().url().default("http://localhost:8000/api/v1"),
 });
 
 export const env = envSchema.parse(import.meta.env);

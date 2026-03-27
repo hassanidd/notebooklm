@@ -1,23 +1,21 @@
 import { z } from "zod";
 
 export const userSchema = z.object({
-  id: z.cuid(),
-  email: z.email(),
-  password: z.string().min(8, "Password must be at least 8 characters long"),
+  id: z.string().uuid(),
+  email: z.string().email(),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  image: z.url().optional(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  profileImage: z.string().url().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
 });
 
-export const signupSchema = userSchema
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-  })
-  .extend({
+export const signupSchema = z
+  .object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("A valid email is required"),
+    password: z.string().min(8, "Password must be at least 8 characters long"),
     confirmPassword: z
       .string()
       .min(8, "Password must be at least 8 characters long"),
@@ -27,11 +25,7 @@ export const signupSchema = userSchema
     path: ["confirmPassword"],
   });
 
-export const signinSchema = userSchema.pick({
-  email: true,
-  password: true,
-});
-
-export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, "Refresh token is required"),
+export const signinSchema = z.object({
+  email: z.string().email("A valid email is required"),
+  password: z.string().min(1, "Password is required"),
 });
