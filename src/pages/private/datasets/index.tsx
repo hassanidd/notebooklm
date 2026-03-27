@@ -11,7 +11,6 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -430,64 +429,105 @@ function EmptyState({ search, onClear }: { search: string; onClear: () => void }
 
 // ── Create dataset modal ──────────────────────────────────────────────────────
 function CreateDatasetModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [metaFields, setMetaFields] = useState<{ key: string; value: string }[]>([
+    { key: "", value: "" },
+  ]);
+
+  const addField = () => setMetaFields((f) => [...f, { key: "", value: "" }]);
+  const removeField = (i: number) => setMetaFields((f) => f.filter((_, idx) => idx !== i));
+  const updateField = (i: number, col: "key" | "value", val: string) =>
+    setMetaFields((f) => f.map((row, idx) => idx === i ? { ...row, [col]: val } : row));
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-1">
             <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
-              <Database className="size-4.5 text-indigo-600" />
+              <Database className="size-4 text-indigo-600" />
             </div>
             <div>
               <DialogTitle className="text-base">Create New Dataset</DialogTitle>
-              <p className="text-xs text-gray-400 mt-0.5">Configure a new vector store for your documents</p>
+              <p className="text-xs text-gray-400 mt-0.5">Set up a new vector store for your documents</p>
             </div>
           </div>
         </DialogHeader>
 
         <div className="space-y-4 py-1">
+          {/* Name */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Dataset Name</Label>
-            <Input placeholder="e.g. Product Documentation v3" className="rounded-xl" />
+            <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dataset Name</Label>
+            <Input placeholder="e.g. Product Documentation v3" className="rounded-xl h-10" />
           </div>
 
+          {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Description</Label>
+            <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</Label>
             <Textarea
               placeholder="Describe the contents and purpose of this dataset…"
               rows={3}
-              className="rounded-xl resize-none"
+              className="rounded-xl resize-none text-sm"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Visibility</Label>
-              <Select defaultValue="team">
-                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private">🔒 Private</SelectItem>
-                  <SelectItem value="team">👥 Team</SelectItem>
-                  <SelectItem value="public">🌐 Public</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Tags */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tags</Label>
+              <span className="text-[11px] text-gray-400">Comma separated</span>
             </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Embedding Model</Label>
-              <Select defaultValue="large">
-                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="large">emb-3-large</SelectItem>
-                  <SelectItem value="small">emb-3-small</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="relative">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-gray-400" />
+              <Input placeholder="docs, api, sdk, public" className="rounded-xl h-10 pl-8" />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Tags <span className="text-gray-400 normal-case font-normal">(comma separated)</span></Label>
-            <Input placeholder="docs, api, public" className="rounded-xl" />
+          {/* Metadata */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Metadata</Label>
+              <span className="text-[11px] text-gray-400">Optional key-value pairs</span>
+            </div>
+
+            <div className="space-y-2">
+              {/* Column headers */}
+              <div className="grid grid-cols-[1fr_1fr_20px] gap-2 px-0.5">
+                <span className="text-[11px] font-medium text-gray-400 pl-1">Key</span>
+                <span className="text-[11px] font-medium text-gray-400 pl-1">Value</span>
+              </div>
+
+              {metaFields.map((row, i) => (
+                <div key={i} className="grid grid-cols-[1fr_1fr_28px] gap-2 items-center">
+                  <Input
+                    value={row.key}
+                    onChange={(e) => updateField(i, "key", e.target.value)}
+                    placeholder="e.g. owner"
+                    className="rounded-lg h-9 text-sm"
+                  />
+                  <Input
+                    value={row.value}
+                    onChange={(e) => updateField(i, "value", e.target.value)}
+                    placeholder="e.g. research-team"
+                    className="rounded-lg h-9 text-sm"
+                  />
+                  <button
+                    onClick={() => removeField(i)}
+                    disabled={metaFields.length === 1}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+
+              <button
+                onClick={addField}
+                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors mt-1"
+              >
+                <Plus className="size-3.5" />
+                Add field
+              </button>
+            </div>
           </div>
         </div>
 
