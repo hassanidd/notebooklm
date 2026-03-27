@@ -1,14 +1,13 @@
-import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, type DragEvent, type ChangeEvent } from "react";
 import { useNavigate } from "react-router";
 import Topbar from "@/components/app/topbar";
 import { DATASETS } from "@/data/mock";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Upload, Zap, ClipboardList, FileText, X,
   CheckCircle2, ArrowRight, Sparkles, Scan, Table2,
   ChevronDown, ChevronUp, Database, FolderOpen, Cpu,
-  FileImage, FileSpreadsheet, FileCode, Music, Video,
+  FileImage, FileSpreadsheet, FileCode, Music, Video, Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -127,34 +126,10 @@ export default function NewIngestionPage() {
               subtitle="Your file will be stored and indexed inside this dataset."
               done={!!selectedDataset}
             >
-              <div className="space-y-3">
-                <Select value={selectedDataset} onValueChange={setSelectedDataset}>
-                  <SelectTrigger className="h-11 text-sm rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-400 focus:ring-indigo-50">
-                    <SelectValue placeholder="Select a dataset…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DATASETS.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        <span className="font-medium">{d.name}</span>
-                        <span className="text-gray-400 ml-2 text-xs">{d.documents} docs · {d.chunks.toLocaleString()} chunks</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {ds && (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                      <FolderOpen className="size-4 text-indigo-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-indigo-900 truncate">{ds.name}</p>
-                      <p className="text-xs text-indigo-400 mt-0.5">{ds.documents} documents · {ds.chunks.toLocaleString()} chunks · {ds.embeddingModel}</p>
-                    </div>
-                    <CheckCircle2 className="size-4 text-indigo-500 flex-shrink-0" />
-                  </div>
-                )}
-              </div>
+              <DatasetPicker
+                value={selectedDataset}
+                onChange={setSelectedDataset}
+              />
             </Section>
 
             {/* Step 2: Upload */}
@@ -512,5 +487,156 @@ function ModeCard({
         ))}
       </div>
     </button>
+  );
+}
+
+// ── Dataset Picker ────────────────────────────────────────────────────────────
+function DatasetPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const selected = DATASETS.find((d) => d.id === value) ?? null;
+  const filtered = query.trim()
+    ? DATASETS.filter((d) => d.name.toLowerCase().includes(query.toLowerCase()))
+    : DATASETS;
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Focus search on open
+  useEffect(() => {
+    if (open) setTimeout(() => searchRef.current?.focus(), 50);
+  }, [open]);
+
+  const handleSelect = (id: string) => {
+    onChange(id);
+    setOpen(false);
+    setQuery("");
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 bg-white text-left transition-all",
+          open ? "border-indigo-400 ring-4 ring-indigo-50" : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50/50"
+        )}
+      >
+        {selected ? (
+          <>
+            <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+              <FolderOpen className="size-4 text-indigo-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">{selected.name}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {selected.documents} documents · {selected.chunks.toLocaleString()} chunks · {selected.embeddingModel}
+              </p>
+            </div>
+            <CheckCircle2 className="size-4 text-indigo-500 flex-shrink-0 mr-1" />
+          </>
+        ) : (
+          <>
+            <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <Database className="size-4 text-gray-400" />
+            </div>
+            <span className="flex-1 text-sm text-gray-400">Select a dataset…</span>
+          </>
+        )}
+        <ChevronDown className={cn("size-4 text-gray-400 transition-transform flex-shrink-0", open && "rotate-180")} />
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl shadow-gray-100/80 overflow-hidden">
+          {/* Search */}
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
+            <Search className="size-4 text-gray-400 flex-shrink-0" />
+            <input
+              ref={searchRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search datasets…"
+              className="flex-1 text-sm text-gray-800 placeholder:text-gray-400 outline-none bg-transparent"
+            />
+            {query && (
+              <button onClick={() => setQuery("")} className="text-gray-400 hover:text-gray-600">
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Options */}
+          <div className="max-h-64 overflow-y-auto py-1.5">
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Database className="size-6 text-gray-300 mb-2" />
+                <p className="text-sm text-gray-400">No datasets match "{query}"</p>
+              </div>
+            ) : (
+              filtered.map((d) => {
+                const sel = d.id === value;
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => handleSelect(d.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 mx-1.5 rounded-xl transition-all text-left",
+                      "w-[calc(100%-12px)]",
+                      sel ? "bg-indigo-50" : "hover:bg-gray-50"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                      sel ? "bg-indigo-100" : "bg-gray-100"
+                    )}>
+                      <FolderOpen className={cn("size-4", sel ? "text-indigo-600" : "text-gray-400")} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn("text-sm font-semibold truncate", sel ? "text-indigo-900" : "text-gray-800")}>{d.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{d.documents} docs · {d.chunks.toLocaleString()} chunks</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={cn(
+                        "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase",
+                        d.status === "active" ? "bg-emerald-100 text-emerald-700"
+                          : d.status === "indexing" ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-500"
+                      )}>
+                        {d.status}
+                      </span>
+                      {sel && <CheckCircle2 className="size-4 text-indigo-500" />}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-gray-100 px-4 py-2.5 flex items-center justify-between">
+            <p className="text-xs text-gray-400">{DATASETS.length} datasets available</p>
+            <a href="/datasets" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+              Manage datasets →
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
