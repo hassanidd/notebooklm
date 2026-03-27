@@ -48,7 +48,8 @@ export default function AutoModePage() {
     <div className="flex flex-col flex-1 overflow-auto">
       <Topbar title="Auto Mode Ingestion" breadcrumbs={[{ label: "Ingestions" }]} />
 
-      <main className="flex-1 p-6 space-y-5">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7 space-y-5">
         {/* Header */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between">
@@ -219,6 +220,7 @@ export default function AutoModePage() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </main>
     </div>

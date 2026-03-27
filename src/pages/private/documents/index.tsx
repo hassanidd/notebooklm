@@ -39,7 +39,8 @@ export default function DocumentsPage() {
     <div className="flex flex-col flex-1 overflow-auto bg-gray-50/40">
       <Topbar title="Documents" />
 
-      <main className="flex-1 p-6 space-y-5">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7 space-y-5">
         {/* Header row */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-48 max-w-xs">
@@ -187,6 +188,7 @@ export default function DocumentsPage() {
             </tbody>
           </table>
         </div>
+              </div>
       </main>
     </div>
   );

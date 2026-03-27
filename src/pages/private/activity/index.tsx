@@ -45,7 +45,8 @@ export default function ActivityPage() {
     <div className="flex flex-col flex-1 overflow-auto bg-gray-50/40">
       <Topbar title="Activity" />
 
-      <main className="flex-1 p-6 space-y-5">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7 space-y-5">
         {/* Summary pills */}
         <div className="flex items-center gap-3 flex-wrap">
           {[
@@ -189,6 +190,7 @@ export default function ActivityPage() {
             <DetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
           )}
         </div>
+              </div>
       </main>
     </div>
   );

@@ -111,9 +111,11 @@ export default function GuidedModePage() {
   return (
     <div className="flex flex-col flex-1 overflow-auto">
       <Topbar title="Guided Ingestion" breadcrumbs={[{ label: "Ingestions" }]} />
-      <main className="flex-1 p-6 space-y-5">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7 space-y-5">
         <GuidedStepper current={step} />
         {renderStep()}
+              </div>
       </main>
     </div>
   );

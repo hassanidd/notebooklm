@@ -66,7 +66,8 @@ export default function DatasetsPage() {
     <div className="flex flex-col flex-1 overflow-auto bg-gray-50/60">
       <Topbar title="Datasets" />
 
-      <main className="flex-1 p-6 space-y-6">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7 space-y-6">
 
         {/* ── Summary strip ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-4 gap-4">
@@ -283,6 +284,7 @@ export default function DatasetsPage() {
             )}
           </div>
         )}
+              </div>
       </main>
 
       {/* ── Create dataset modal ─────────────────────────────────────── */}

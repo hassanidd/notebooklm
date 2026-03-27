@@ -54,7 +54,8 @@ export default function DashboardPage() {
     <div className="flex flex-col flex-1 overflow-auto bg-gray-50/40">
       <Topbar title="Dashboard" />
 
-      <main className="flex-1 p-6 space-y-6">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7 space-y-6">
         {/* Stat cards */}
         <div className="grid grid-cols-4 gap-4">
           {STAT_CARDS.map((card) => (
@@ -276,6 +277,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+              </div>
       </main>
     </div>
   );
