@@ -267,89 +267,76 @@ function DatasetCard({ dataset: ds, onClick }: { dataset: Dataset; onClick: () =
   const StatusIcon = sc.icon;
   const avgChunks = ds.documents > 0 ? Math.round(ds.chunks / ds.documents) : 0;
 
-  const accentColor =
-    ds.status === "active"   ? "bg-emerald-400" :
-    ds.status === "indexing" ? "bg-blue-400" :
-    ds.status === "error"    ? "bg-red-400" :
-    "bg-gray-300";
+  const iconCls =
+    ds.status === "active"   ? "bg-emerald-50 text-emerald-600" :
+    ds.status === "indexing" ? "bg-blue-50 text-blue-600" :
+    ds.status === "error"    ? "bg-red-50 text-red-600" :
+    "bg-gray-100 text-gray-500";
+
+  const statusCls =
+    ds.status === "active"   ? "text-emerald-600" :
+    ds.status === "indexing" ? "text-blue-600" :
+    ds.status === "error"    ? "text-red-500" :
+    "text-gray-400";
 
   return (
     <div
       onClick={onClick}
-      className="relative bg-white rounded-2xl border border-gray-100 shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(99,102,241,0.10)] hover:border-indigo-100 transition-all duration-200 cursor-pointer group overflow-hidden flex flex-col"
+      className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4 cursor-pointer group hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-100/40 transition-all duration-300"
     >
-      {/* Left accent strip */}
-      <div className={cn("absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full", accentColor)} />
-
-      <div className="p-5 pl-6 flex flex-col flex-1 gap-4">
-
-        {/* ── Header ── */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Gradient icon */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-200 group-hover:shadow-indigo-300 transition-shadow">
-              <Database className="size-4.5 text-white" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-[13px] font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors leading-tight">
-                {ds.name}
-              </h3>
-              <p className="text-[11px] text-gray-400 truncate mt-0.5 leading-snug">{ds.description}</p>
-            </div>
+      {/* ── Row 1: icon · status · menu ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0", iconCls)}>
+            <Database className="size-4" />
           </div>
+          <span className={cn("flex items-center gap-1 text-[11px] font-semibold", statusCls)}>
+            <StatusIcon className={cn("size-3", ds.status === "indexing" && "animate-spin")} />
+            {sc.label}
+          </span>
+        </div>
+        <button
+          className="w-6 h-6 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="size-3.5 text-gray-400" />
+        </button>
+      </div>
 
-          {/* Status + menu */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <span className={cn("inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border", sc.badge)}>
-              <StatusIcon className="size-2.5" />{sc.label}
-            </span>
-            <button
-              className="w-6 h-6 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
-              onClick={(e) => e.stopPropagation()}
+      {/* ── Row 2: name + description ── */}
+      <div className="space-y-1">
+        <h3 className="text-[13.5px] font-bold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1 leading-snug">
+          {ds.name}
+        </h3>
+        <p className="text-[12px] text-gray-400 line-clamp-2 leading-relaxed">{ds.description}</p>
+      </div>
+
+      {/* ── Row 3: inline stats ── */}
+      <div className="flex items-baseline gap-1 text-[12px] flex-wrap">
+        <span className="font-bold text-gray-800">{ds.documents.toLocaleString()}</span>
+        <span className="text-gray-400 mr-2">docs</span>
+        <span className="font-bold text-gray-800">{ds.chunks.toLocaleString()}</span>
+        <span className="text-gray-400 mr-2">chunks</span>
+        <span className="font-bold text-gray-800">{avgChunks}</span>
+        <span className="text-gray-400">avg/doc</span>
+      </div>
+
+      {/* ── Row 4: tags + arrow ── */}
+      <div className="flex items-center justify-between mt-auto pt-3.5 border-t border-gray-100">
+        <div className="flex gap-1.5 flex-wrap">
+          {ds.tags.slice(0, 2).map((tag) => (
+            <span
+              key={tag}
+              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors"
             >
-              <MoreHorizontal className="size-3.5 text-gray-400" />
-            </button>
-          </div>
+              {tag}
+            </span>
+          ))}
+          {ds.tags.length > 2 && (
+            <span className="text-[11px] text-gray-400">+{ds.tags.length - 2}</span>
+          )}
         </div>
-
-        {/* ── Divider ── */}
-        <div className="h-px bg-gray-100 -mx-1" />
-
-        {/* ── Stats ── */}
-        <div className="flex items-center">
-          <div className="flex-1 text-center">
-            <p className="text-[15px] font-bold text-gray-900 tabular-nums">{ds.documents.toLocaleString()}</p>
-            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mt-0.5">Docs</p>
-          </div>
-          <div className="w-px h-8 bg-gray-100" />
-          <div className="flex-1 text-center">
-            <p className="text-[15px] font-bold text-gray-900 tabular-nums">{ds.chunks.toLocaleString()}</p>
-            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mt-0.5">Chunks</p>
-          </div>
-          <div className="w-px h-8 bg-gray-100" />
-          <div className="flex-1 text-center">
-            <p className="text-[15px] font-bold text-gray-900 tabular-nums">{avgChunks}</p>
-            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mt-0.5">Avg/Doc</p>
-          </div>
-        </div>
-
-        {/* ── Footer: tags + arrow ── */}
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex gap-1.5 flex-wrap">
-            {ds.tags.slice(0, 2).map((tag) => (
-              <span key={tag} className="text-[11px] font-medium text-gray-500 bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 px-2 py-0.5 rounded-full transition-colors">
-                #{tag}
-              </span>
-            ))}
-            {ds.tags.length > 2 && (
-              <span className="text-[11px] font-medium text-gray-400">+{ds.tags.length - 2}</span>
-            )}
-          </div>
-          <div className="w-7 h-7 rounded-lg bg-gray-50 group-hover:bg-indigo-50 flex items-center justify-center transition-colors">
-            <ArrowUpRight className="size-3.5 text-gray-300 group-hover:text-indigo-500 transition-colors" />
-          </div>
-        </div>
-
+        <ArrowUpRight className="size-3.5 text-gray-300 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
       </div>
     </div>
   );
