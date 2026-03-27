@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import Topbar from "@/components/app/topbar";
 import { DATASETS } from "@/data/mock";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Upload, Zap, ClipboardList, FileText, X,
   CheckCircle2, ArrowRight, Sparkles, Scan, Table2,
@@ -126,34 +127,33 @@ export default function NewIngestionPage() {
               subtitle="Your file will be stored and indexed inside this dataset."
               done={!!selectedDataset}
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
-                {DATASETS.map((d) => {
-                  const sel = d.id === selectedDataset;
-                  return (
-                    <button
-                      key={d.id}
-                      onClick={() => setSelectedDataset(d.id)}
-                      className={cn(
-                        "flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all group",
-                        sel
-                          ? "border-indigo-400 bg-indigo-50"
-                          : "border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/40"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
-                        sel ? "bg-indigo-100" : "bg-gray-100 group-hover:bg-indigo-100"
-                      )}>
-                        <FolderOpen className={cn("size-4", sel ? "text-indigo-600" : "text-gray-400")} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn("text-sm font-semibold truncate", sel ? "text-indigo-900" : "text-gray-800")}>{d.name}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{d.documents} docs · {d.chunks.toLocaleString()} chunks</p>
-                      </div>
-                      {sel && <CheckCircle2 className="size-4 text-indigo-500 flex-shrink-0" />}
-                    </button>
-                  );
-                })}
+              <div className="space-y-3">
+                <Select value={selectedDataset} onValueChange={setSelectedDataset}>
+                  <SelectTrigger className="h-11 text-sm rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-400 focus:ring-indigo-50">
+                    <SelectValue placeholder="Select a dataset…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DATASETS.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        <span className="font-medium">{d.name}</span>
+                        <span className="text-gray-400 ml-2 text-xs">{d.documents} docs · {d.chunks.toLocaleString()} chunks</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {ds && (
+                  <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <FolderOpen className="size-4 text-indigo-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-indigo-900 truncate">{ds.name}</p>
+                      <p className="text-xs text-indigo-400 mt-0.5">{ds.documents} documents · {ds.chunks.toLocaleString()} chunks · {ds.embeddingModel}</p>
+                    </div>
+                    <CheckCircle2 className="size-4 text-indigo-500 flex-shrink-0" />
+                  </div>
+                )}
               </div>
             </Section>
 
