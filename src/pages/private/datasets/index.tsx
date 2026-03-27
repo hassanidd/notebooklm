@@ -4,8 +4,7 @@ import Topbar from "@/components/app/topbar";
 import { DATASETS, type Dataset } from "@/data/mock";
 import {
   Search, Plus, LayoutGrid, List, FileText, Layers, Tag,
-  Database, MoreHorizontal, ArrowUpRight, Cpu, Globe,
-  Lock, Users, TrendingUp, CheckCircle2, Loader2,
+  Database, MoreHorizontal, ArrowUpRight, TrendingUp, CheckCircle2, Loader2,
   AlertCircle, Clock, X, ChevronDown, Zap,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -22,18 +21,6 @@ const STATUS_CONFIG = {
   error:    { dot: "bg-red-500",                   badge: "bg-red-50 text-red-700 border-red-200",                icon: AlertCircle,   label: "Error"    },
 } as const;
 
-const VISIBILITY_CONFIG = {
-  public:  { icon: Globe,  label: "Public",  color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-  team:    { icon: Users,  label: "Team",    color: "text-blue-600 bg-blue-50 border-blue-200"          },
-  private: { icon: Lock,   label: "Private", color: "text-gray-600 bg-gray-100 border-gray-200"         },
-} as const;
-
-// ── Model short labels ────────────────────────────────────────────────────────
-function shortModel(m: string) {
-  if (m.includes("large")) return "emb-3-large";
-  if (m.includes("small")) return "emb-3-small";
-  return m;
-}
 
 export default function DatasetsPage() {
   const navigate = useNavigate();
@@ -187,11 +174,9 @@ export default function DatasetsPage() {
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/60">
                     <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3.5">Dataset</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Visibility</th>
                     <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Docs</th>
                     <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Chunks</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Capacity</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Model</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Tags</th>
                     <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Status</th>
                     <th className="px-4 py-3.5" />
                   </tr>
@@ -199,9 +184,6 @@ export default function DatasetsPage() {
                 <tbody className="divide-y divide-gray-50">
                   {filtered.map((ds) => {
                     const sc = STATUS_CONFIG[ds.status] ?? STATUS_CONFIG.draft;
-                    const vc = VISIBILITY_CONFIG[ds.visibility];
-                    const VisIcon = vc.icon;
-                    const fillPct = Math.min(Math.round((ds.documents / 200) * 100), 100);
                     return (
                       <tr
                         key={ds.id}
@@ -222,13 +204,6 @@ export default function DatasetsPage() {
                           </div>
                         </td>
 
-                        {/* Visibility */}
-                        <td className="px-4 py-4">
-                          <span className={cn("inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full border", vc.color)}>
-                            <VisIcon className="size-3" />{vc.label}
-                          </span>
-                        </td>
-
                         {/* Docs */}
                         <td className="px-4 py-4">
                           <span className="text-sm font-semibold text-gray-800">{ds.documents.toLocaleString()}</span>
@@ -239,24 +214,18 @@ export default function DatasetsPage() {
                           <span className="text-sm font-semibold text-gray-800">{ds.chunks.toLocaleString()}</span>
                         </td>
 
-                        {/* Capacity bar */}
+                        {/* Tags */}
                         <td className="px-4 py-4">
-                          <div className="flex items-center gap-2 w-28">
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div
-                                className={cn("h-full rounded-full", fillPct > 80 ? "bg-amber-400" : "bg-indigo-400")}
-                                style={{ width: `${fillPct}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500 w-8 text-right">{fillPct}%</span>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {ds.tags.slice(0, 2).map((tag) => (
+                              <span key={tag} className="flex items-center gap-1 text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                                <Tag className="size-2.5" />{tag}
+                              </span>
+                            ))}
+                            {ds.tags.length > 2 && (
+                              <span className="text-[11px] text-gray-400">+{ds.tags.length - 2}</span>
+                            )}
                           </div>
-                        </td>
-
-                        {/* Model */}
-                        <td className="px-4 py-4">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full">
-                            <Cpu className="size-3" />{shortModel(ds.embeddingModel)}
-                          </span>
                         </td>
 
                         {/* Status */}
@@ -295,9 +264,6 @@ export default function DatasetsPage() {
 // ── Dataset grid card ─────────────────────────────────────────────────────────
 function DatasetCard({ dataset: ds, onClick }: { dataset: Dataset; onClick: () => void }) {
   const sc = STATUS_CONFIG[ds.status] ?? STATUS_CONFIG.draft;
-  const vc = VISIBILITY_CONFIG[ds.visibility];
-  const VisIcon = vc.icon;
-  const fillPct = Math.min(Math.round((ds.documents / 200) * 100), 100);
   const avgChunks = ds.documents > 0 ? Math.round(ds.chunks / ds.documents) : 0;
 
   return (
@@ -309,7 +275,7 @@ function DatasetCard({ dataset: ds, onClick }: { dataset: Dataset; onClick: () =
       <div className={cn(
         "h-1 w-full flex-shrink-0",
         ds.status === "active"   ? "bg-gradient-to-r from-emerald-400 to-teal-400" :
-        ds.status === "indexing" ? "bg-gradient-to-r from-blue-400 to-indigo-500 animate-[shimmer_2s_ease-in-out_infinite]" :
+        ds.status === "indexing" ? "bg-gradient-to-r from-blue-400 to-indigo-500" :
         ds.status === "error"    ? "bg-gradient-to-r from-red-400 to-rose-400" :
         "bg-gray-200"
       )} />
@@ -323,17 +289,12 @@ function DatasetCard({ dataset: ds, onClick }: { dataset: Dataset; onClick: () =
             </div>
             <span className={cn("absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white", sc.dot)} />
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className={cn("inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border", vc.color)}>
-              <VisIcon className="size-3" />{vc.label}
-            </span>
-            <button
-              className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="size-3.5 text-gray-400" />
-            </button>
-          </div>
+          <button
+            className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="size-3.5 text-gray-400" />
+          </button>
         </div>
 
         {/* Name & description */}
@@ -344,29 +305,12 @@ function DatasetCard({ dataset: ds, onClick }: { dataset: Dataset; onClick: () =
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-2 mb-4">
-          <StatPill icon={FileText} label="docs" value={ds.documents.toLocaleString()} color="text-blue-500" />
-          <StatPill icon={Layers}   label="chunks" value={ds.chunks.toLocaleString()} color="text-violet-500" />
-          <StatPill icon={Zap}      label="avg/doc" value={avgChunks.toString()} color="text-amber-500" />
+          <StatPill icon={FileText} label="docs"    value={ds.documents.toLocaleString()} color="text-blue-500" />
+          <StatPill icon={Layers}   label="chunks"  value={ds.chunks.toLocaleString()}    color="text-violet-500" />
+          <StatPill icon={Zap}      label="avg/doc" value={avgChunks.toString()}           color="text-amber-500" />
         </div>
 
-        {/* Capacity bar */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-medium text-gray-400">Capacity</span>
-            <span className={cn(
-              "text-[11px] font-bold",
-              fillPct > 80 ? "text-amber-600" : "text-indigo-600"
-            )}>{fillPct}%</span>
-          </div>
-          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className={cn("h-full rounded-full transition-all", fillPct > 80 ? "bg-amber-400" : "bg-indigo-400")}
-              style={{ width: `${fillPct}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Bottom row */}
+        {/* Tags + arrow */}
         <div className="flex items-center justify-between mt-auto pt-1">
           <div className="flex gap-1.5 flex-wrap">
             {ds.tags.slice(0, 2).map((tag) => (
@@ -379,14 +323,6 @@ function DatasetCard({ dataset: ds, onClick }: { dataset: Dataset; onClick: () =
             )}
           </div>
           <ArrowUpRight className="size-4 text-gray-300 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
-        </div>
-
-        {/* Embedding model badge */}
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full">
-            <Cpu className="size-3" />
-            {shortModel(ds.embeddingModel)}
-          </span>
         </div>
       </div>
     </div>
