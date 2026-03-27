@@ -73,10 +73,10 @@ export default function NewIngestionPage() {
     <div className="flex flex-col flex-1 overflow-auto bg-gray-50/60">
       <Topbar title="New Ingestion" breadcrumbs={[{ label: "Ingestions" }]} />
 
-      <main className="flex-1 flex flex-col items-center px-6 py-12">
+      <main className="flex-1 flex flex-col items-center px-6 pt-6 pb-10">
 
         {/* ── Header ──────────────────────────────────────────────────── */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
             <Sparkles className="size-3.5" />
             AI-powered ingestion
