@@ -264,81 +264,97 @@ export default function DatasetsPage() {
 // ── Dataset grid card ─────────────────────────────────────────────────────────
 function DatasetCard({ dataset: ds, onClick }: { dataset: Dataset; onClick: () => void }) {
   const sc = STATUS_CONFIG[ds.status] ?? STATUS_CONFIG.draft;
+  const StatusIcon = sc.icon;
   const avgChunks = ds.documents > 0 ? Math.round(ds.chunks / ds.documents) : 0;
+
+  const accentColor =
+    ds.status === "active"   ? "bg-emerald-400" :
+    ds.status === "indexing" ? "bg-blue-400" :
+    ds.status === "error"    ? "bg-red-400" :
+    "bg-gray-300";
 
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group overflow-hidden flex flex-col"
+      className="relative bg-white rounded-2xl border border-gray-100 shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(99,102,241,0.10)] hover:border-indigo-100 transition-all duration-200 cursor-pointer group overflow-hidden flex flex-col"
     >
-      {/* Status accent bar */}
-      <div className={cn(
-        "h-1 w-full flex-shrink-0",
-        ds.status === "active"   ? "bg-gradient-to-r from-emerald-400 to-teal-400" :
-        ds.status === "indexing" ? "bg-gradient-to-r from-blue-400 to-indigo-500" :
-        ds.status === "error"    ? "bg-gradient-to-r from-red-400 to-rose-400" :
-        "bg-gray-200"
-      )} />
+      {/* Left accent strip */}
+      <div className={cn("absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full", accentColor)} />
 
-      <div className="p-5 flex flex-col flex-1">
-        {/* Top row */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="relative">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-50 group-hover:bg-indigo-100 transition-colors flex items-center justify-center">
-              <Database className="size-5 text-indigo-500" />
+      <div className="p-5 pl-6 flex flex-col flex-1 gap-4">
+
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Gradient icon */}
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-200 group-hover:shadow-indigo-300 transition-shadow">
+              <Database className="size-4.5 text-white" />
             </div>
-            <span className={cn("absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white", sc.dot)} />
+            <div className="min-w-0">
+              <h3 className="text-[13px] font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors leading-tight">
+                {ds.name}
+              </h3>
+              <p className="text-[11px] text-gray-400 truncate mt-0.5 leading-snug">{ds.description}</p>
+            </div>
           </div>
-          <button
-            className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MoreHorizontal className="size-3.5 text-gray-400" />
-          </button>
+
+          {/* Status + menu */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <span className={cn("inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border", sc.badge)}>
+              <StatusIcon className="size-2.5" />{sc.label}
+            </span>
+            <button
+              className="w-6 h-6 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="size-3.5 text-gray-400" />
+            </button>
+          </div>
         </div>
 
-        {/* Name & description */}
-        <h3 className="text-sm font-bold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">
-          {ds.name}
-        </h3>
-        <p className="text-xs text-gray-500 mb-4 line-clamp-2 leading-relaxed">{ds.description}</p>
+        {/* ── Divider ── */}
+        <div className="h-px bg-gray-100 -mx-1" />
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <StatPill icon={FileText} label="docs"    value={ds.documents.toLocaleString()} color="text-blue-500" />
-          <StatPill icon={Layers}   label="chunks"  value={ds.chunks.toLocaleString()}    color="text-violet-500" />
-          <StatPill icon={Zap}      label="avg/doc" value={avgChunks.toString()}           color="text-amber-500" />
+        {/* ── Stats ── */}
+        <div className="flex items-center">
+          <div className="flex-1 text-center">
+            <p className="text-[15px] font-bold text-gray-900 tabular-nums">{ds.documents.toLocaleString()}</p>
+            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mt-0.5">Docs</p>
+          </div>
+          <div className="w-px h-8 bg-gray-100" />
+          <div className="flex-1 text-center">
+            <p className="text-[15px] font-bold text-gray-900 tabular-nums">{ds.chunks.toLocaleString()}</p>
+            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mt-0.5">Chunks</p>
+          </div>
+          <div className="w-px h-8 bg-gray-100" />
+          <div className="flex-1 text-center">
+            <p className="text-[15px] font-bold text-gray-900 tabular-nums">{avgChunks}</p>
+            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mt-0.5">Avg/Doc</p>
+          </div>
         </div>
 
-        {/* Tags + arrow */}
-        <div className="flex items-center justify-between mt-auto pt-1">
+        {/* ── Footer: tags + arrow ── */}
+        <div className="flex items-center justify-between mt-auto">
           <div className="flex gap-1.5 flex-wrap">
             {ds.tags.slice(0, 2).map((tag) => (
-              <span key={tag} className="flex items-center gap-1 text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                <Tag className="size-2.5" />{tag}
+              <span key={tag} className="text-[11px] font-medium text-gray-500 bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 px-2 py-0.5 rounded-full transition-colors">
+                #{tag}
               </span>
             ))}
             {ds.tags.length > 2 && (
               <span className="text-[11px] font-medium text-gray-400">+{ds.tags.length - 2}</span>
             )}
           </div>
-          <ArrowUpRight className="size-4 text-gray-300 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
+          <div className="w-7 h-7 rounded-lg bg-gray-50 group-hover:bg-indigo-50 flex items-center justify-center transition-colors">
+            <ArrowUpRight className="size-3.5 text-gray-300 group-hover:text-indigo-500 transition-colors" />
+          </div>
         </div>
+
       </div>
     </div>
   );
 }
 
-// ── Stat pill ─────────────────────────────────────────────────────────────────
-function StatPill({ icon: Icon, label, value, color }: { icon: typeof FileText; label: string; value: string; color: string }) {
-  return (
-    <div className="flex flex-col items-center gap-0.5 bg-gray-50 rounded-xl py-2 px-1">
-      <Icon className={cn("size-3.5", color)} />
-      <span className="text-xs font-bold text-gray-800 leading-none">{value}</span>
-      <span className="text-[10px] text-gray-400 leading-none">{label}</span>
-    </div>
-  );
-}
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState({ search, onClear }: { search: string; onClear: () => void }) {
