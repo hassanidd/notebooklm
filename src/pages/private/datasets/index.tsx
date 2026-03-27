@@ -1,26 +1,26 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import Topbar from "@/components/app/topbar";
-import { StatusBadge, VisibilityBadge } from "@/components/app/status-badge";
 import { DATASETS, type Dataset } from "@/data/mock";
-import { Button } from "@/components/ui/button";
 import {
-  Search, Plus, LayoutGrid, List, FileText, Layers, Tag, Calendar,
-  Database, TrendingUp, ArrowUpRight, MoreHorizontal,
+  Search, Plus, LayoutGrid, List, FileText, Layers, Tag,
+  Database, MoreHorizontal, ArrowUpRight, TrendingUp, CheckCircle2, Loader2,
+  AlertCircle, Clock, X, ChevronDown, Zap,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const STATUS_COLORS: Record<string, string> = {
-  active: "bg-emerald-500",
-  indexing: "bg-blue-500 animate-pulse",
-  draft: "bg-gray-400",
-  error: "bg-red-500",
-};
+// ── Status config ──────────────────────────────────────────────────────────────
+const STATUS_CONFIG = {
+  active:   { dot: "bg-emerald-500",               badge: "bg-emerald-50 text-emerald-700 border-emerald-200",   icon: CheckCircle2, label: "Active"   },
+  indexing: { dot: "bg-blue-500 animate-pulse",    badge: "bg-blue-50 text-blue-700 border-blue-200",             icon: Loader2,       label: "Indexing" },
+  draft:    { dot: "bg-gray-400",                  badge: "bg-gray-100 text-gray-600 border-gray-200",            icon: Clock,         label: "Draft"    },
+  error:    { dot: "bg-red-500",                   badge: "bg-red-50 text-red-700 border-red-200",                icon: AlertCircle,   label: "Error"    },
+} as const;
+
 
 export default function DatasetsPage() {
   const navigate = useNavigate();
@@ -37,277 +37,454 @@ export default function DatasetsPage() {
         d.tags.some((t) => t.includes(search.toLowerCase())))
   );
 
+  // Summary stats
+  const totalDocs   = DATASETS.reduce((s, d) => s + d.documents, 0);
+  const totalChunks = DATASETS.reduce((s, d) => s + d.chunks, 0);
+  const activeCount = DATASETS.filter((d) => d.status === "active").length;
+  const statusCounts = Object.fromEntries(
+    ["all", "active", "indexing", "draft", "error"].map((s) => [
+      s,
+      s === "all" ? DATASETS.length : DATASETS.filter((d) => d.status === s).length,
+    ])
+  );
+
   return (
-    <div className="flex flex-col flex-1 overflow-auto bg-gray-50/40">
+    <div className="flex flex-col flex-1 overflow-auto bg-gray-50/60">
       <Topbar title="Datasets" />
 
-      <main className="flex-1 p-6">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6 flex-wrap">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7 space-y-6">
+
+        {/* ── Summary strip ─────────────────────────────────────────────── */}
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            { label: "Total Datasets", value: DATASETS.length,           icon: Database,    color: "text-indigo-600 bg-indigo-50",   border: "border-indigo-100" },
+            { label: "Total Documents", value: totalDocs.toLocaleString(), icon: FileText,   color: "text-blue-600 bg-blue-50",       border: "border-blue-100"   },
+            { label: "Total Chunks",    value: totalChunks.toLocaleString(), icon: Layers,   color: "text-violet-600 bg-violet-50",   border: "border-violet-100" },
+            { label: "Active",          value: activeCount,               icon: TrendingUp,  color: "text-emerald-600 bg-emerald-50", border: "border-emerald-100" },
+          ].map(({ label, value, icon: Icon, color, border }) => (
+            <div key={label} className={cn("bg-white rounded-2xl border p-4 flex items-center gap-3.5 shadow-sm", border)}>
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", color)}>
+                <Icon className="size-5" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900 leading-none">{value}</p>
+                <p className="text-xs text-gray-500 mt-1">{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Toolbar ───────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Search */}
-          <div className="relative flex-1 min-w-48 max-w-xs">
+          <div className="relative flex-1 min-w-52 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
             <input
-              placeholder="Search datasets…"
-              className="w-full h-9 pl-9 pr-4 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 transition-all placeholder:text-gray-400"
+              placeholder="Search datasets, tags…"
+              className="w-full h-10 pl-9 pr-9 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 transition-all placeholder:text-gray-400"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Status filter pills */}
-          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl p-1">
-            {["all", "active", "indexing", "draft"].map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={cn(
-                  "text-xs font-medium px-3 py-1.5 rounded-lg capitalize transition-all",
-                  statusFilter === s
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                )}
-              >
-                {s === "all" ? "All" : s}
-              </button>
-            ))}
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1">
+            {["all", "active", "indexing", "draft"].map((s) => {
+              const count = statusCounts[s] ?? 0;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg capitalize transition-all",
+                    statusFilter === s
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  )}
+                >
+                  {s === "all" ? "All" : s}
+                  <span className={cn(
+                    "text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none",
+                    statusFilter === s ? "bg-white/25 text-white" : "bg-gray-100 text-gray-500"
+                  )}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* View toggle */}
           <div className="flex border border-gray-200 rounded-xl overflow-hidden bg-white">
             <button
               onClick={() => setView("grid")}
-              className={cn(
-                "p-2 transition-colors",
-                view === "grid" ? "bg-indigo-50 text-indigo-600" : "text-gray-400 hover:bg-gray-50"
-              )}
+              className={cn("px-3 py-2 transition-colors", view === "grid" ? "bg-indigo-50 text-indigo-600" : "text-gray-400 hover:bg-gray-50")}
             >
               <LayoutGrid className="size-4" />
             </button>
             <button
               onClick={() => setView("list")}
-              className={cn(
-                "p-2 transition-colors",
-                view === "list" ? "bg-indigo-50 text-indigo-600" : "text-gray-400 hover:bg-gray-50"
-              )}
+              className={cn("px-3 py-2 transition-colors", view === "list" ? "bg-indigo-50 text-indigo-600" : "text-gray-400 hover:bg-gray-50")}
             >
               <List className="size-4" />
             </button>
           </div>
 
-          <Button className="gap-2 ml-auto" onClick={() => setCreateOpen(true)}>
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="ml-auto flex items-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-indigo-200 hover:shadow-md hover:shadow-indigo-200 transition-all"
+          >
             <Plus className="size-4" />
             New Dataset
-          </Button>
+          </button>
         </div>
 
-        {/* Count */}
-        <p className="text-xs text-gray-400 mb-4">
-          {filtered.length} dataset{filtered.length !== 1 ? "s" : ""}{search && ` matching "${search}"`}
+        {/* Count line */}
+        <p className="text-xs text-gray-400 -mt-2">
+          {filtered.length} dataset{filtered.length !== 1 ? "s" : ""}
+          {search && <span> matching <span className="font-medium text-gray-600">"{search}"</span></span>}
         </p>
 
-        {/* Grid view */}
+        {/* ── Grid view ─────────────────────────────────────────────────── */}
         {view === "grid" && (
           <div className="grid grid-cols-3 gap-4">
             {filtered.map((ds) => (
               <DatasetCard key={ds.id} dataset={ds} onClick={() => navigate(`/datasets/${ds.id}`)} />
             ))}
-            {filtered.length === 0 && (
-              <div className="col-span-3 py-20 text-center">
-                <Database className="size-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-sm font-medium text-gray-500">No datasets found</p>
-                <p className="text-xs text-gray-400 mt-1">Try a different search or filter</p>
-              </div>
+            {filtered.length === 0 && <EmptyState search={search} onClear={() => { setSearch(""); setStatusFilter("all"); }} />}
+          </div>
+        )}
+
+        {/* ── List view ─────────────────────────────────────────────────── */}
+        {view === "list" && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {filtered.length === 0 ? (
+              <EmptyState search={search} onClear={() => { setSearch(""); setStatusFilter("all"); }} />
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/60">
+                    <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3.5">Dataset</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Docs</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Chunks</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Tags</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Status</th>
+                    <th className="px-4 py-3.5" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filtered.map((ds) => {
+                    const sc = STATUS_CONFIG[ds.status] ?? STATUS_CONFIG.draft;
+                    return (
+                      <tr
+                        key={ds.id}
+                        onClick={() => navigate(`/datasets/${ds.id}`)}
+                        className="hover:bg-indigo-50/20 cursor-pointer transition-colors group"
+                      >
+                        {/* Name */}
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                              <Database className="size-4 text-indigo-500" />
+                              <span className={cn("absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white", sc.dot)} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{ds.name}</p>
+                              <p className="text-xs text-gray-400 truncate max-w-[220px]">{ds.description}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Docs */}
+                        <td className="px-4 py-4">
+                          <span className="text-sm font-semibold text-gray-800">{ds.documents.toLocaleString()}</span>
+                        </td>
+
+                        {/* Chunks */}
+                        <td className="px-4 py-4">
+                          <span className="text-sm font-semibold text-gray-800">{ds.chunks.toLocaleString()}</span>
+                        </td>
+
+                        {/* Tags */}
+                        <td className="px-4 py-4">
+                          <div className="flex gap-1.5 flex-wrap">
+                            {ds.tags.slice(0, 2).map((tag) => (
+                              <span key={tag} className="flex items-center gap-1 text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                                <Tag className="size-2.5" />{tag}
+                              </span>
+                            ))}
+                            {ds.tags.length > 2 && (
+                              <span className="text-[11px] text-gray-400">+{ds.tags.length - 2}</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-4">
+                          <span className={cn("inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full border", sc.badge)}>
+                            {sc.label}
+                          </span>
+                        </td>
+
+                        {/* Action */}
+                        <td className="px-4 py-4">
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
+                          >
+                            <MoreHorizontal className="size-4 text-gray-400" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
         )}
-
-        {/* List view */}
-        {view === "list" && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/60">
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Name</th>
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Visibility</th>
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Documents</th>
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Chunks</th>
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Status</th>
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Created</th>
-                  <th className="px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map((ds) => (
-                  <tr
-                    key={ds.id}
-                    className="hover:bg-indigo-50/30 cursor-pointer transition-colors group"
-                    onClick={() => navigate(`/datasets/${ds.id}`)}
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                          <Database className="size-4 text-indigo-500" />
-                          <span className={cn(
-                            "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-white",
-                            STATUS_COLORS[ds.status] || "bg-gray-400"
-                          )} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{ds.name}</p>
-                          <p className="text-xs text-gray-400 truncate max-w-xs">{ds.description}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5"><VisibilityBadge visibility={ds.visibility} /></td>
-                    <td className="px-5 py-3.5">
-                      <span className="text-sm font-medium text-gray-700">{ds.documents.toLocaleString()}</span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="text-sm font-medium text-gray-700">{ds.chunks.toLocaleString()}</span>
-                    </td>
-                    <td className="px-5 py-3.5"><StatusBadge status={ds.status} /></td>
-                    <td className="px-5 py-3.5 text-xs text-gray-400">{ds.createdAt}</td>
-                    <td className="px-5 py-3.5">
-                      <button className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all">
-                        <MoreHorizontal className="size-4 text-gray-400" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              </div>
       </main>
 
-      {/* Create dataset modal */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Dataset</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label>Dataset Name</Label>
-              <Input placeholder="e.g. Product Documentation v3" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Description</Label>
-              <Textarea placeholder="Describe the contents and purpose of this dataset..." rows={3} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Visibility</Label>
-              <Select defaultValue="team">
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private">Private</SelectItem>
-                  <SelectItem value="team">Team</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Tags (comma separated)</Label>
-              <Input placeholder="docs, api, public" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={() => setCreateOpen(false)}>Create Dataset</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ── Create dataset modal ─────────────────────────────────────── */}
+      <CreateDatasetModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
 
+// ── Dataset grid card ─────────────────────────────────────────────────────────
 function DatasetCard({ dataset: ds, onClick }: { dataset: Dataset; onClick: () => void }) {
-  const fillPct = Math.round((ds.documents / 200) * 100);
+  const sc = STATUS_CONFIG[ds.status] ?? STATUS_CONFIG.draft;
+  const StatusIcon = sc.icon;
+  const avgChunks = ds.documents > 0 ? Math.round(ds.chunks / ds.documents) : 0;
+
+  const iconCls =
+    ds.status === "active"   ? "bg-emerald-50 text-emerald-600" :
+    ds.status === "indexing" ? "bg-blue-50 text-blue-600" :
+    ds.status === "error"    ? "bg-red-50 text-red-600" :
+    "bg-gray-100 text-gray-500";
+
+  const statusCls =
+    ds.status === "active"   ? "text-emerald-600" :
+    ds.status === "indexing" ? "text-blue-600" :
+    ds.status === "error"    ? "text-red-500" :
+    "text-gray-400";
 
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group overflow-hidden"
+      className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4 cursor-pointer group hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-100/40 transition-all duration-300"
     >
-      {/* Top gradient accent */}
-      <div className={cn(
-        "h-1",
-        ds.status === "active" ? "bg-gradient-to-r from-emerald-400 to-teal-400" :
-        ds.status === "indexing" ? "bg-gradient-to-r from-blue-400 to-indigo-400" :
-        ds.status === "error" ? "bg-gradient-to-r from-red-400 to-rose-400" :
-        "bg-gray-200"
-      )} />
-
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 group-hover:bg-indigo-100 transition-colors flex items-center justify-center">
-              <Database className="size-5 text-indigo-500" />
-            </div>
-            <span className={cn(
-              "absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white",
-              STATUS_COLORS[ds.status] || "bg-gray-400"
-            )} />
+      {/* ── Row 1: icon · status · menu ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0", iconCls)}>
+            <Database className="size-4" />
           </div>
-          <div className="flex items-center gap-1.5">
-            <VisibilityBadge visibility={ds.visibility} />
-            <button
-              className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="size-3.5 text-gray-400" />
-            </button>
-          </div>
+          <span className={cn("flex items-center gap-1 text-[11px] font-semibold", statusCls)}>
+            <StatusIcon className={cn("size-3", ds.status === "indexing" && "animate-spin")} />
+            {sc.label}
+          </span>
         </div>
+        <button
+          className="w-6 h-6 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="size-3.5 text-gray-400" />
+        </button>
+      </div>
 
-        <h3 className="text-sm font-semibold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">
+      {/* ── Row 2: name + description ── */}
+      <div className="space-y-1">
+        <h3 className="text-[13.5px] font-bold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1 leading-snug">
           {ds.name}
         </h3>
-        <p className="text-xs text-gray-500 mb-4 line-clamp-2 leading-relaxed">{ds.description}</p>
+        <p className="text-[12px] text-gray-400 line-clamp-2 leading-relaxed">{ds.description}</p>
+      </div>
 
-        {/* Stats */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <FileText className="size-3.5 text-gray-400" />
-            <span className="font-medium text-gray-700">{ds.documents.toLocaleString()}</span>
-            <span>docs</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <Layers className="size-3.5 text-gray-400" />
-            <span className="font-medium text-gray-700">{ds.chunks.toLocaleString()}</span>
-            <span>chunks</span>
-          </div>
-        </div>
+      {/* ── Row 3: inline stats ── */}
+      <div className="flex items-baseline gap-1 text-[12px] flex-wrap">
+        <span className="font-bold text-gray-800">{ds.documents.toLocaleString()}</span>
+        <span className="text-gray-400 mr-2">docs</span>
+        <span className="font-bold text-gray-800">{ds.chunks.toLocaleString()}</span>
+        <span className="text-gray-400 mr-2">chunks</span>
+        <span className="font-bold text-gray-800">{avgChunks}</span>
+        <span className="text-gray-400">avg/doc</span>
+      </div>
 
-        {/* Fill progress */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-400">Capacity</span>
-            <span className="text-xs font-medium text-gray-600">{fillPct}%</span>
-          </div>
-          <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-full",
-                fillPct > 80 ? "bg-amber-400" : "bg-indigo-400"
-              )}
-              style={{ width: `${Math.min(fillPct, 100)}%` }}
-            />
-          </div>
+      {/* ── Row 4: tags + arrow ── */}
+      <div className="flex items-center justify-between mt-auto pt-3.5 border-t border-gray-100">
+        <div className="flex gap-1.5 flex-wrap">
+          {ds.tags.slice(0, 2).map((tag) => (
+            <span
+              key={tag}
+              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors"
+            >
+              {tag}
+            </span>
+          ))}
+          {ds.tags.length > 2 && (
+            <span className="text-[11px] text-gray-400">+{ds.tags.length - 2}</span>
+          )}
         </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1 flex-wrap">
-            {ds.tags.slice(0, 2).map((tag) => (
-              <span key={tag} className="flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                <Tag className="size-2.5" />{tag}
-              </span>
-            ))}
-          </div>
-          <ArrowUpRight className="size-4 text-gray-300 group-hover:text-indigo-500 transition-colors" />
-        </div>
+        <ArrowUpRight className="size-3.5 text-gray-300 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
       </div>
     </div>
+  );
+}
+
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+function EmptyState({ search, onClear }: { search: string; onClear: () => void }) {
+  return (
+    <div className="col-span-3 flex flex-col items-center py-20 gap-3">
+      <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-1">
+        <Database className="size-7 text-gray-300" />
+      </div>
+      <p className="text-sm font-semibold text-gray-600">No datasets found</p>
+      <p className="text-xs text-gray-400 text-center max-w-xs">
+        {search ? `Nothing matched "${search}". Try a different search or clear your filters.` : "Create your first dataset to get started."}
+      </p>
+      {search && (
+        <button
+          onClick={onClear}
+          className="mt-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+        >
+          Clear filters
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Create dataset modal ──────────────────────────────────────────────────────
+function CreateDatasetModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [metaFields, setMetaFields] = useState<{ key: string; value: string }[]>([
+    { key: "", value: "" },
+  ]);
+
+  const addField = () => setMetaFields((f) => [...f, { key: "", value: "" }]);
+  const removeField = (i: number) => setMetaFields((f) => f.filter((_, idx) => idx !== i));
+  const updateField = (i: number, col: "key" | "value", val: string) =>
+    setMetaFields((f) => f.map((row, idx) => idx === i ? { ...row, [col]: val } : row));
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+              <Database className="size-4 text-indigo-600" />
+            </div>
+            <div>
+              <DialogTitle className="text-base">Create New Dataset</DialogTitle>
+              <p className="text-xs text-gray-400 mt-0.5">Set up a new vector store for your documents</p>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          {/* Name */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dataset Name</Label>
+            <Input placeholder="e.g. Product Documentation v3" className="rounded-xl h-10" />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</Label>
+            <Textarea
+              placeholder="Describe the contents and purpose of this dataset…"
+              rows={3}
+              className="rounded-xl resize-none text-sm"
+            />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tags</Label>
+              <span className="text-[11px] text-gray-400">Comma separated</span>
+            </div>
+            <div className="relative">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-gray-400" />
+              <Input placeholder="docs, api, sdk, public" className="rounded-xl h-10 pl-8" />
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Metadata</Label>
+              <span className="text-[11px] text-gray-400">Optional key-value pairs</span>
+            </div>
+
+            <div className="space-y-2">
+              {/* Column headers */}
+              <div className="grid grid-cols-[1fr_1fr_20px] gap-2 px-0.5">
+                <span className="text-[11px] font-medium text-gray-400 pl-1">Key</span>
+                <span className="text-[11px] font-medium text-gray-400 pl-1">Value</span>
+              </div>
+
+              {metaFields.map((row, i) => (
+                <div key={i} className="grid grid-cols-[1fr_1fr_28px] gap-2 items-center">
+                  <Input
+                    value={row.key}
+                    onChange={(e) => updateField(i, "key", e.target.value)}
+                    placeholder="e.g. owner"
+                    className="rounded-lg h-9 text-sm"
+                  />
+                  <Input
+                    value={row.value}
+                    onChange={(e) => updateField(i, "value", e.target.value)}
+                    placeholder="e.g. research-team"
+                    className="rounded-lg h-9 text-sm"
+                  />
+                  <button
+                    onClick={() => removeField(i)}
+                    disabled={metaFields.length === 1}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+
+              <button
+                onClick={addField}
+                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors mt-1"
+              >
+                <Plus className="size-3.5" />
+                Add field
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 mt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm shadow-indigo-200 transition-all"
+          >
+            Create Dataset
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

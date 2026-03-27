@@ -28,7 +28,8 @@ export default function DatasetDetailPage() {
         breadcrumbs={[{ label: "Datasets", path: "/datasets" }]}
       />
 
-      <main className="flex-1 p-6 space-y-6">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7 space-y-6">
         {/* Dataset header card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-start justify-between">
@@ -241,6 +242,7 @@ export default function DatasetDetailPage() {
             </div>
           </TabsContent>
         </Tabs>
+              </div>
       </main>
     </div>
   );

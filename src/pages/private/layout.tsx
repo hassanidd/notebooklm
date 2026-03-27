@@ -25,9 +25,14 @@ export default function PrivateLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div className="h-screen bg-[#e8e9ee] flex overflow-hidden p-2 gap-2">
+      {/* Sidebar panel */}
+      <div className="w-60 flex-shrink-0 bg-white rounded-2xl overflow-hidden flex flex-col ring-1 ring-black/[0.05]">
+        <Sidebar />
+      </div>
+
+      {/* Main content panel */}
+      <div className="flex-1 min-w-0 flex flex-col bg-white rounded-2xl overflow-hidden ring-1 ring-black/[0.05]">
         <Outlet />
       </div>
     </div>

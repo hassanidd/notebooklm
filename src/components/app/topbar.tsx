@@ -11,7 +11,7 @@ export default function Topbar({ title, breadcrumbs = [], actions }: TopbarProps
   const navigate = useNavigate();
 
   return (
-    <header className="h-14 flex items-center gap-4 px-5 border-b border-gray-100 bg-white flex-shrink-0">
+    <header className="h-14 flex items-center gap-4 px-6 border-b border-gray-100 bg-white flex-shrink-0 sticky top-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
       {/* Breadcrumb + title */}
       <div className="flex items-center gap-1.5 flex-1 min-w-0">
         {breadcrumbs.map((crumb, i) => (

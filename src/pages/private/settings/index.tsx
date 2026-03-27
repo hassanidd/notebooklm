@@ -34,7 +34,8 @@ export default function SettingsPage() {
     <div className="flex flex-col flex-1 overflow-auto bg-gray-50/40">
       <Topbar title="Settings" />
 
-      <main className="flex-1 p-6">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto w-full px-8 py-7">
         <div className="flex gap-5">
           {/* Sidebar nav */}
           <div className="w-56 flex-shrink-0 space-y-1">
@@ -243,6 +244,7 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+              </div>
       </main>
     </div>
   );

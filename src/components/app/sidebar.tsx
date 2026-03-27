@@ -63,7 +63,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex flex-col w-60 min-h-screen bg-white border-r border-gray-100 flex-shrink-0">
+    <aside className="flex flex-col h-full bg-white">
       {/* Workspace switcher */}
       <div className="px-3 py-3 border-b border-gray-100">
         <button className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl hover:bg-gray-50 transition-colors group">
