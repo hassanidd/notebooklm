@@ -1,22 +1,29 @@
 import { cn } from "@/lib/utils";
-import type { DatasetStatus, IngestionStatus, ContentType } from "@/data/mock";
 
-const STATUS_STYLES: Record<DatasetStatus | IngestionStatus, string> = {
+const STATUS_STYLES: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  archived: "bg-gray-100 text-gray-600 border-gray-200",
   indexing: "bg-blue-50 text-blue-700 border-blue-200",
   draft: "bg-gray-100 text-gray-600 border-gray-200",
   error: "bg-red-50 text-red-700 border-red-200",
+  pending: "bg-gray-100 text-gray-600 border-gray-200",
+  uploading: "bg-indigo-50 text-indigo-700 border-indigo-200",
   queued: "bg-gray-100 text-gray-600 border-gray-200",
   extracting: "bg-amber-50 text-amber-700 border-amber-200",
+  partitioning: "bg-amber-50 text-amber-700 border-amber-200",
   cleaned: "bg-sky-50 text-sky-700 border-sky-200",
   chunked: "bg-violet-50 text-violet-700 border-violet-200",
+  chunking: "bg-violet-50 text-violet-700 border-violet-200",
+  summarising: "bg-sky-50 text-sky-700 border-sky-200",
   embedding: "bg-blue-50 text-blue-700 border-blue-200",
+  vectorization: "bg-blue-50 text-blue-700 border-blue-200",
   indexed: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
   failed: "bg-red-50 text-red-700 border-red-200",
   complete: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
-const CONTENT_TYPE_STYLES: Record<ContentType, string> = {
+const CONTENT_TYPE_STYLES: Record<string, string> = {
   text: "bg-gray-100 text-gray-700",
   table: "bg-blue-50 text-blue-700",
   ocr: "bg-amber-50 text-amber-700",
@@ -25,25 +32,33 @@ const CONTENT_TYPE_STYLES: Record<ContentType, string> = {
   transcript: "bg-pink-50 text-pink-700",
 };
 
-export function StatusBadge({ status }: { status: DatasetStatus | IngestionStatus }) {
+function formatStatusLabel(status: string): string {
+  return status
+    .split(/[_-]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border",
-        STATUS_STYLES[status]
+        STATUS_STYLES[status] ?? "bg-gray-100 text-gray-600 border-gray-200",
       )}
     >
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {formatStatusLabel(status)}
     </span>
   );
 }
 
-export function ContentTypeBadge({ type }: { type: ContentType }) {
+export function ContentTypeBadge({ type }: { type: string }) {
   return (
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide",
-        CONTENT_TYPE_STYLES[type]
+        CONTENT_TYPE_STYLES[type] ?? "bg-gray-100 text-gray-700",
       )}
     >
       {type}

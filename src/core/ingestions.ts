@@ -78,12 +78,16 @@ export type TIngestionLog = {
 
 export type TIngestionDocument = {
   id: string;
+  hash: string;
   filename: string;
   fileSize: number;
   fileType: string;
   sourceUrl?: string | null;
+  userId: string;
+  tenantId: string;
   createdAt: string;
   updatedAt: string;
+  taskId?: string | null;
   datasetIds: string[];
   processingStatus: string;
   processingDetails: Record<string, unknown> | null;
@@ -98,10 +102,16 @@ export type TIngestionChunk = {
   textContent: string;
   summaryContent: string;
   charCount: number;
+  tokenCount?: number | null;
   contentTypes: string[];
+  originalContent?: Record<string, unknown> | null;
+  chunkMetadata?: Record<string, unknown> | null;
+  vectorChunkId?: string | null;
   embeddingModel?: string | null;
   summaryModel?: string | null;
   ingestionStatus: string;
+  errorMessage?: string | null;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -192,12 +202,16 @@ function isPipelineStepKey(value: string): value is TIngestionStepKey {
 export function mapBackendDocument(document: TBackendDocument): TIngestionDocument {
   return {
     id: document.id,
+    hash: document.hash,
     filename: document.filename,
     fileSize: document.file_size,
     fileType: document.file_type,
     sourceUrl: document.source_url ?? null,
+    userId: document.user_id,
+    tenantId: document.tanent_id,
     createdAt: document.created_at,
     updatedAt: document.updated_at,
+    taskId: document.task_id ?? null,
     datasetIds: document.dataset_ids,
     processingStatus: document.processing_status,
     processingDetails: document.processing_details ?? null,
@@ -214,10 +228,16 @@ export function mapBackendChunk(chunk: TBackendChunk): TIngestionChunk {
     textContent: chunk.text_content,
     summaryContent: chunk.summary_content,
     charCount: chunk.char_count,
+    tokenCount: chunk.token_count ?? null,
     contentTypes: chunk.content_types,
+    originalContent: chunk.original_content ?? null,
+    chunkMetadata: chunk.chunk_metadata ?? null,
+    vectorChunkId: chunk.vector_chunk_id ?? null,
     embeddingModel: chunk.embedding_model ?? null,
     summaryModel: chunk.summary_model ?? null,
     ingestionStatus: chunk.ingestion_status,
+    errorMessage: chunk.error_message ?? null,
+    isActive: chunk.is_active,
     createdAt: chunk.created_at,
     updatedAt: chunk.updated_at,
   };
